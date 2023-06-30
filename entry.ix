@@ -1,14 +1,15 @@
 (import "phunanon/dotenv")
 
-(var [bot-token channel-sf num-comic path]
-    (-> (dotenv) (juxt :discord-bot-token :channel-sf :count :path))
-  num-comic (to-num num-comic)
-  rn (str (char-code 13) (char-code 10)))
+(var [bot-token channel-sf num-comic hours comics-path n-path]
+      (-> (dotenv) (juxt :discord-bot-token :channel-sf :interval-hours :count :comics-path :n-path))
+     num-comic (to-num num-comic)
+     rn (str (char-code 13) (char-code 10)))
 
 (function form-data n
   (let num (str n))
-  (let data (read-blob (str 'comics/' num '.jpg')))
-  (print "Sending " (blob-len data) "B image")
+  (print-str "Image " n ": ")
+  (let data (read-blob (str comics-path '/' num '.jpg')))
+  (print "sending " (blob-len data) "B")
   (blob '--boundary' rn
 'Content-Disposition: form-data; name="payload_json"' rn
 'Content-Type: application/json' rn
@@ -29,12 +30,13 @@ rn
 'Content-Type: image/jpg' rn rn data rn '--boundary--'))
 
 (function tick
-  (let n (-> path read to-num))
+  (let n (-> n-path read to-num))
   (POST
     (str "https://discord.com/api/v10/channels/" channel-sf "/messages")
     (form-data n)
     {"Authorization" (str "Bot " bot-token), "Content-Type" "multipart/form-data; boundary=boundary"}
     print)
-  (write path (str ((>= n num-comic) 0 (inc n)))))
+  (write n-path (str ((>= n num-comic) 0 (inc n)))))
 
-(set-interval tick 60,000)
+(set-interval tick (* 60,000 60 hours))
+(tick)
